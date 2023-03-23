@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, {useEffect, useMemo} from 'react';
 import './App.css';
 import logo from './logo.png';
 import {ConnectionProvider, useConnection, useWallet, WalletProvider} from '@solana/wallet-adapter-react';
@@ -18,6 +18,8 @@ import {useYieldController} from "./hooks/useYieldController";
 import {usePrice} from "./hooks/usePrice";
 import {useTokenBalance} from "./hooks/useTokenBalance";
 import {useSolBalance} from "./hooks/useSolBalance";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 require('@solana/wallet-adapter-react-ui/styles.css');
 
@@ -34,7 +36,15 @@ const Content = () => {
     const nctBalance = useTokenBalance(holdingAccountNct);
     const yieldAccountBalance = useSolBalance(yieldAccountSol);
     const [burnAmount, setBurnAmount] = React.useState(0);
+    const [equivalentNct, setEquivalentNct] = React.useState(0);
 
+    useEffect(() => {
+        if (solNctPrice) {
+            setEquivalentNct(burnAmount * solNctPrice.toNumber());
+        }
+    }, [burnAmount, solNctPrice]);
+
+    const notify = () => toast("🔥You have burned" + equivalentNct + "NCT 🔥");
     const burn = async () => {
         if (wallet?.publicKey && state) {
             if (burnAmount > 0) {
@@ -45,7 +55,7 @@ const Content = () => {
                 }));
                 await wallet.sendTransaction(transaction, connection);
             }
-            await allocateYield();
+            await allocateYield().then(notify);
         }
     }
 
@@ -56,7 +66,7 @@ const Content = () => {
         <p><>NCT/USD Price (USD): {round(nctPrice?.toNumber() || 0, 2)}</></p>
         <p><>SOL/NCT Price: {round(solNctPrice?.toNumber() || 0, 2)}</></p>
         <p><>Account Balance: {round((yieldAccountBalance || 0) / (1_000_000_000), 5)}</></p>
-        <p><>NCT Balance: {round(nctBalance || 0, 2)}</></p>
+        <p><>Available NCT to burn: {round(nctBalance || 0, 2)}</></p>
         <div>
             <>
                 <input defaultValue={burnAmount || 0} onChange={(e) => setBurnAmount(parseFloat(e.target.value))}/>

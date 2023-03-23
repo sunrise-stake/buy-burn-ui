@@ -12,6 +12,11 @@ export const useTokenBalance = (tokenAccountAddress: PublicKey) => {
             const balance = await connection.getTokenAccountBalance(tokenAccountAddress);
             setResult(balance.value.uiAmount);
         })();
+
+        connection.onAccountChange(tokenAccountAddress, async () => {
+            const balance = await connection.getTokenAccountBalance(tokenAccountAddress);
+            setResult(balance.value.uiAmount);
+        });
     }, [tokenAccountAddress]);
 
     return result;
